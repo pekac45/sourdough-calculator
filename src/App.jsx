@@ -1,7 +1,48 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
+import { DEFAULT_FIELDS, DefaultsModal } from './DefaultsModal'
 
 const round = (value) => Math.round(value * 10) / 10
+
+const BASE_DEFAULTS = {
+  targetDough: 500,
+  hydration: 55,
+  preFermentPercent: 40,
+  whiteFlourPercent: 80,
+  saltPercent: 2,
+  loaves: 1,
+  extraPreFerment: 0,
+}
+
+const isBrowser = typeof window !== 'undefined'
+
+const loadInitialState = () => {
+  const fallback = { defaults: BASE_DEFAULTS, values: {} }
+  if (!isBrowser) {
+    return fallback
+  }
+
+  try {
+    const saved = localStorage.getItem('sourdough-state')
+    if (!saved) {
+      return fallback
+    }
+
+    const parsed = JSON.parse(saved)
+    return {
+      defaults: { ...BASE_DEFAULTS, ...(parsed?.defaults || {}) },
+      values: parsed?.values || {},
+    }
+  } catch (error) {
+    console.error('Could not read stored state', error)
+    return fallback
+  }
+}
+
+const numberOrDefault = (value, fallback) => {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
 
 const SliderRow = ({
   label,
@@ -36,25 +77,75 @@ const SliderRow = ({
 }
 
 function App() {
-  const [targetDough, setTargetDough] = useState(500)
-  const [hydration, setHydration] = useState(55)
-  const [preFermentPercent, setPreFermentPercent] = useState(40)
-  const [whiteFlourPercent, setWhiteFlourPercent] = useState(80)
-  const [saltPercent, setSaltPercent] = useState(2)
-  const [loaves, setLoaves] = useState(1)
-  const [extraPreFerment, setExtraPreFerment] = useState(0)
-  const [stashLocked, setStashLocked] = useState(false)
+  const initialState = loadInitialState()
+  const [defaults, setDefaults] = useState(initialState.defaults)
+  const [targetDough, setTargetDough] = useState(() =>
+    numberOrDefault(initialState.values.targetDough, initialState.defaults.targetDough),
+  )
+  const [hydration, setHydration] = useState(() =>
+    numberOrDefault(initialState.values.hydration, initialState.defaults.hydration),
+  )
+  const [preFermentPercent, setPreFermentPercent] = useState(() =>
+    numberOrDefault(initialState.values.preFermentPercent, initialState.defaults.preFermentPercent),
+  )
+  const [whiteFlourPercent, setWhiteFlourPercent] = useState(() =>
+    numberOrDefault(initialState.values.whiteFlourPercent, initialState.defaults.whiteFlourPercent),
+  )
+  const [saltPercent, setSaltPercent] = useState(() =>
+    numberOrDefault(initialState.values.saltPercent, initialState.defaults.saltPercent),
+  )
+  const [loaves, setLoaves] = useState(() =>
+    numberOrDefault(initialState.values.loaves, initialState.defaults.loaves),
+  )
+  const [extraPreFerment, setExtraPreFerment] = useState(() =>
+    numberOrDefault(initialState.values.extraPreFerment, initialState.defaults.extraPreFerment),
+  )
+  const [stashLocked, setStashLocked] = useState(() => Boolean(initialState.values.stashLocked))
+  const [showDefaultsModal, setShowDefaultsModal] = useState(false)
+  const [defaultsDraft, setDefaultsDraft] = useState(initialState.defaults)
+
+  const applyDefaults = (nextDefaults) => {
+    setTargetDough(nextDefaults.targetDough)
+    setHydration(nextDefaults.hydration)
+    setPreFermentPercent(nextDefaults.preFermentPercent)
+    setWhiteFlourPercent(nextDefaults.whiteFlourPercent)
+    setSaltPercent(nextDefaults.saltPercent)
+    setLoaves(nextDefaults.loaves)
+    setExtraPreFerment(nextDefaults.extraPreFerment)
+    setStashLocked(nextDefaults.extraPreFerment > 0)
+  }
 
   const resetDefaults = () => {
-    setTargetDough(500)
-    setHydration(55)
-    setPreFermentPercent(40)
-    setWhiteFlourPercent(80)
-    setSaltPercent(2)
-    setLoaves(1)
-    setExtraPreFerment(0)
-    setStashLocked(false)
+    applyDefaults(defaults)
   }
+
+  useEffect(() => {
+    if (!isBrowser) return
+    const payload = {
+      defaults,
+      values: {
+        targetDough,
+        hydration,
+        preFermentPercent,
+        whiteFlourPercent,
+        saltPercent,
+        loaves,
+        extraPreFerment,
+        stashLocked,
+      },
+    }
+    localStorage.setItem('sourdough-state', JSON.stringify(payload))
+  }, [
+    defaults,
+    targetDough,
+    hydration,
+    preFermentPercent,
+    whiteFlourPercent,
+    saltPercent,
+    loaves,
+    extraPreFerment,
+    stashLocked,
+  ])
 
   const effectiveTargetDough = targetDough * loaves
   const flourParts =
@@ -75,6 +166,23 @@ function App() {
   const prefermentWhite = preFermentPart * 2.5
   const prefermentWater = preFermentPart * 5
 
+  const handleDefaultsSubmit = (event) => {
+    event.preventDefault()
+    const sanitized = DEFAULT_FIELDS.reduce((acc, field) => {
+      const nextValue = numberOrDefault(
+        defaultsDraft[field.key],
+        defaults[field.key] ?? BASE_DEFAULTS[field.key],
+      )
+      acc[field.key] = Math.min(Math.max(nextValue, field.min), field.max)
+      return acc
+    }, {})
+
+    const merged = { ...defaults, ...sanitized }
+    setDefaults(merged)
+    applyDefaults(merged)
+    setShowDefaultsModal(false)
+  }
+
   return (
     <main className="page">
       <section className="panel">
@@ -89,6 +197,16 @@ function App() {
           </div>
           <div className="actions">
             <div className="badge">Default 55% hydration</div>
+            <button
+              className="ghost"
+              type="button"
+              onClick={() => {
+                setDefaultsDraft(defaults)
+                setShowDefaultsModal(true)
+              }}
+            >
+              Change defaults
+            </button>
             <button className="ghost" type="button" onClick={resetDefaults}>
               Reset to defaults
             </button>
@@ -268,6 +386,19 @@ function App() {
           </div>
         </div>
       </section>
+
+      <DefaultsModal
+        isOpen={showDefaultsModal}
+        defaultsDraft={defaultsDraft}
+        onChangeDraft={(key, value) =>
+          setDefaultsDraft((prev) => ({
+            ...prev,
+            [key]: value,
+          }))
+        }
+        onClose={() => setShowDefaultsModal(false)}
+        onSubmit={handleDefaultsSubmit}
+      />
     </main>
   )
 }
