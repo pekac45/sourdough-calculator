@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import { DEFAULT_FIELDS, DefaultsModal } from './DefaultsModal'
+import { ConfirmModal } from './ConfirmModal'
 
 const round = (value) => Math.round(value * 10) / 10
 
@@ -102,6 +103,7 @@ function App() {
   )
   const [stashLocked, setStashLocked] = useState(() => Boolean(initialState.values.stashLocked))
   const [showDefaultsModal, setShowDefaultsModal] = useState(false)
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [defaultsDraft, setDefaultsDraft] = useState(initialState.defaults)
 
   const applyDefaults = (nextDefaults) => {
@@ -207,7 +209,7 @@ function App() {
             >
               Change defaults
             </button>
-            <button className="ghost" type="button" onClick={resetDefaults}>
+            <button className="ghost" type="button" onClick={() => setShowResetConfirm(true)}>
               Reset to defaults
             </button>
           </div>
@@ -398,6 +400,18 @@ function App() {
         }
         onClose={() => setShowDefaultsModal(false)}
         onSubmit={handleDefaultsSubmit}
+      />
+      <ConfirmModal
+        isOpen={showResetConfirm}
+        title="Reset to defaults?"
+        message="This will restore all sliders to the saved defaults."
+        confirmLabel="Yes, reset"
+        cancelLabel="Cancel"
+        onCancel={() => setShowResetConfirm(false)}
+        onConfirm={() => {
+          resetDefaults()
+          setShowResetConfirm(false)
+        }}
       />
     </main>
   )

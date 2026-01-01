@@ -78,6 +78,21 @@
   filter: brightness(1.05);
 }
 
+.danger {
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  color: #fef2f2;
+  border: 1px solid #ef4444;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.35);
+}
+
+.danger:hover {
+  filter: brightness(1.05);
+}
+
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.08em;
