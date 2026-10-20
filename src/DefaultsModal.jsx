@@ -11,15 +11,15 @@ export const DEFAULT_FIELDS = [
   {
     key: 'preFermentPercent',
     label: 'Pre-ferment',
-    min: 20,
-    max: 60,
+    min: 10,
+    max: 90,
     step: 1,
     suffix: '% of flour',
   },
   {
     key: 'whiteFlourPercent',
     label: 'White flour share',
-    min: 50,
+    min: 0,
     max: 100,
     step: 1,
     suffix: '% of flour',

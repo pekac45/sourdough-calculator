@@ -240,8 +240,8 @@ function App() {
             <SliderRow
               label="Pre-ferment"
               value={preFermentPercent}
-              min={20}
-              max={60}
+              min={10}
+              max={90}
               step={1}
               suffix="% of flour"
               helper="Portion of total flour that comes from the active pre-ferment."
@@ -250,7 +250,7 @@ function App() {
             <SliderRow
               label="White flour share"
               value={whiteFlourPercent}
-              min={50}
+              min={0}
               max={100}
               step={1}
               suffix="% of flour"
